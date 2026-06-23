@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Case Files — In the Age of AI</title>
+<style>
+  :root{
+    --bg:#0e1116;
+    --bg-raise:#161b22;
+    --bg-card:#1a2029;
+    --ink:#e6e9ef;
+    --ink-soft:#9aa4b2;
+    --ink-faint:#5f6b7a;
+    --line:#262d38;
+    --amber:#f0a72b;
+    --amber-soft:#f5c46b;
+    --red:#e25b54;
+    --blue:#4f9be0;
+    --teal:#3fb89a;
+    --purple:#9b8cf0;
+    --mono:'SFMono-Regular',ui-monospace,'Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--amber);color:#1a1205}
+
+  /* ---------- ambient grid backdrop ---------- */
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),
+                     linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:48px 48px;
+    opacity:.25;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 30%,transparent 75%);
+  }
+
+  .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:0 24px}
+
+  /* ---------- hero ---------- */
+  header{padding:90px 0 50px;border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--amber);display:flex;align-items:center;gap:10px;margin-bottom:26px;
+  }
+  .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--amber);
+    box-shadow:0 0 0 0 rgba(240,167,43,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,167,43,.5)}70%{box-shadow:0 0 0 12px rgba(240,167,43,0)}100%{box-shadow:0 0 0 0 rgba(240,167,43,0)}}
+  h1{font-size:clamp(34px,6vw,60px);line-height:1.04;font-weight:800;letter-spacing:-.02em}
+  h1 .thin{font-weight:300;color:var(--ink-soft);display:block}
+  .lede{margin-top:24px;max-width:620px;color:var(--ink-soft);font-size:18px}
+  .lede strong{color:var(--ink);font-weight:600}
+
+  .stats{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px}
+  .stat{
+    background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;min-width:140px;flex:1
+  }
+  .stat .n{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber-soft)}
+  .stat .l{font-size:12px;color:var(--ink-faint);letter-spacing:.04em;margin-top:2px}
+
+  /* ---------- filter bar ---------- */
+  .controls{position:sticky;top:0;z-index:5;padding:18px 0;
+    background:rgba(14,17,22,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+    margin-bottom:14px}
+  .controls-inner{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .controls .tag-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-faint);margin-right:6px}
+  .chip{
+    font-family:var(--mono);font-size:12px;letter-spacing:.03em;
+    background:transparent;color:var(--ink-soft);border:1px solid var(--line);
+    padding:7px 13px;border-radius:999px;cursor:pointer;transition:.2s;white-space:nowrap
+  }
+  .chip:hover{border-color:var(--ink-faint);color:var(--ink)}
+  .chip[aria-pressed="true"]{background:var(--amber);color:#1a1205;border-color:var(--amber);font-weight:600}
+
+  /* ---------- group heading ---------- */
+  .group-head{margin:46px 0 6px;display:flex;align-items:baseline;gap:14px}
+  .group-head .gnum{font-family:var(--mono);color:var(--amber);font-size:13px;letter-spacing:.1em}
+  .group-head h2{font-size:24px;font-weight:700;letter-spacing:-.01em}
+  .group-sub{color:var(--ink-faint);font-size:14px;margin-bottom:8px}
+
+  /* ---------- case card ---------- */
+  .case{
+    position:relative;background:var(--bg-card);border:1px solid var(--line);
+    border-radius:14px;margin:16px 0;overflow:hidden;
+    opacity:0;transform:translateY(26px);
+    transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1),border-color .25s;
+  }
+  .case.in{opacity:1;transform:none}
+  .case::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sev,var(--ink-faint))}
+  .case:hover{border-color:#36404e}
+  .case.hidden{display:none}
+
+  .case-head{display:flex;align-items:flex-start;gap:16px;padding:20px 22px 20px 26px;cursor:pointer}
+  .case-id{font-family:var(--mono);font-size:13px;color:var(--ink-faint);padding-top:3px;min-width:34px}
+  .case-main{flex:1;min-width:0}
+  .case-title{font-size:18px;font-weight:650;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .case-tag{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--sev,var(--ink-soft));border:1px solid var(--sev,var(--line));
+    padding:2px 8px;border-radius:5px;opacity:.92}
+  .case-brief{color:var(--ink-soft);font-size:14.5px;margin-top:8px}
+  .case-cost{font-family:var(--mono);font-size:13px;color:var(--amber-soft);margin-top:10px;
+    display:inline-flex;align-items:center;gap:7px}
+  .case-cost::before{content:"";width:5px;height:5px;background:var(--amber);border-radius:50%}
+  .chev{color:var(--ink-faint);transition:transform .3s;flex-shrink:0;margin-top:4px}
+  .case.open .chev{transform:rotate(90deg)}
+
+  /* ---------- expandable body ---------- */
+  .case-body{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.3,.7,.2,1)}
+  .case-body-inner{padding:4px 22px 24px 26px;border-top:1px solid var(--line);margin-top:0}
+  .layer{margin-top:18px}
+  .layer-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .layer-label .dot{width:7px;height:7px;border-radius:2px}
+  .l-cause .dot{background:var(--red)}
+  .l-cause .layer-label{color:var(--red)}
+  .l-user .dot{background:var(--teal)}
+  .l-user .layer-label{color:var(--teal)}
+  .l-impact .dot{background:var(--amber)}
+  .l-impact .layer-label{color:var(--amber-soft)}
+  .layer p{color:var(--ink);font-size:15px}
+  .layer.l-user{background:rgba(63,184,154,.06);border:1px solid rgba(63,184,154,.18);
+    border-radius:10px;padding:14px 16px;margin-top:20px}
+  .layer.l-user p{color:#cfeee4}
+
+  /* divider between the two case-groups in flow */
+  .flow-note{font-family:var(--mono);font-size:12px;color:var(--ink-faint);
+    text-align:center;margin:30px 0 6px;letter-spacing:.05em}
+
+  footer{border-top:1px solid var(--line);margin-top:60px;padding:48px 0 80px}
+  footer h3{font-size:20px;margin-bottom:14px}
+  footer .principles{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  .principle{background:var(--bg-raise);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .principle .pk{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+  .principle p{color:var(--ink-soft);font-size:14.5px}
+  .foot-tail{color:var(--ink-faint);font-size:13px;margin-top:30px;max-width:680px}
+  @media(max-width:640px){
+    footer .principles{grid-template-columns:1fr}
+    .case-head{padding:18px 16px 18px 22px}
+    .case-body-inner{padding:4px 16px 22px 22px}
+    .stat{min-width:calc(50% - 7px)}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .case{opacity:1;transform:none;transition:border-color .2s}
+    html{scroll-behavior:auto}
+    .eyebrow::before{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Security case files · age of AI</div>
+    <h1>When the breach<span class="thin">walked in through a trusted door.</span></h1>
+    <p class="lede">Fifteen real incidents at major companies. Every one reduces to the same pattern: <strong>untrusted input meets a tool with too much power.</strong> Tap any file to open the cause and what you can do about it.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">$10.2M</div><div class="l">avg. US breach (industry)</div></div>
+      <div class="stat"><div class="n">241 days</div><div class="l">to detect &amp; contain</div></div>
+      <div class="stat"><div class="n">2 principles</div><div class="l">defend every case</div></div>
+      <div class="stat"><div class="n">15</div><div class="l">files on record</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap controls-inner">
+    <span class="tag-label">Filter</span>
+    <button class="chip" data-filter="all" aria-pressed="true">All 15</button>
+    <button class="chip" data-filter="ai" aria-pressed="false">AI / agent</button>
+    <button class="chip" data-filter="creds" aria-pressed="false">Credentials</button>
+    <button class="chip" data-filter="supply" aria-pressed="false">Supply chain</button>
+    <button class="chip" data-filter="human" aria-pressed="false">Human factor</button>
+    <button class="chip" data-filter="ops" aria-pressed="false">Ops / deploy</button>
+  </div>
+</div>
+
+<main class="wrap" id="cases">
+
+  <div class="group-head"><span class="gnum">GROUP A</span><h2>Ten breaches at major tech companies</h2></div>
+  <div class="group-sub">Distinct attack types — from prompt injection to unpatched servers.</div>
+  <div id="groupA"></div>
+
+  <div class="flow-note">— GROUP B · bad practices that cost money, trust, or data —</div>
+  <div class="group-head"><span class="gnum">GROUP B</span><h2>Five failures of practice</h2></div>
+  <div class="group-sub">Not always a hacker. Sometimes just a careless habit with a price tag.</div>
+  <div id="groupB"></div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <h3>Two principles defend against every file above</h3>
+    <div class="principles">
+      <div class="principle">
+        <div class="pk">Least privilege</div>
+        <p>Scope OAuth grants, agent tools, tokens and admin accounts to the minimum. Every excess permission is a gift to whoever takes it.</p>
+      </div>
+      <div class="principle">
+        <div class="pk">Trust nothing unverified</div>
+        <p>Anything an AI reads, a user supplies, or a vendor ships is untrusted until checked — including the AI's own words to your customers.</p>
+      </div>
+    </div>
+    <p class="foot-tail">The defenses are mostly boring and cheap — change a default password, apply a known patch, verify an MFA reset, pin a dependency, confirm before an irreversible action. The failures are catastrophic and expensive. That asymmetry is the whole argument for doing the basics well.</p>
+  </div>
+</footer>
+
+<script>
+const SEV={red:'var(--red)',amber:'var(--amber)',blue:'var(--blue)',teal:'var(--teal)',purple:'var(--purple)'};
+
+const CASES=[
+ // ---------- GROUP A ----------
+ {g:'A',id:'A1',cat:['ai'],sev:'purple',title:'AI desktop assistant extensions',tag:'AI prompt injection · RCE',
+  cost:'high severity · since patched',
+  brief:'AI desktop extensions ran web-supplied text as system commands.',
+  issue:'Several desktop extensions passed user input into system commands without sanitizing it. Because the AI reads web pages to answer questions, a malicious page could smuggle in commands the extension then executed.',
+  cause:'An old-school command-injection bug met a new delivery route: the AI fetches attacker-controlled web content and treats hidden instructions in it as real commands.',
+  user:'Keep AI desktop and browser tools updated to the latest version, and don\u2019t point an AI assistant at random or untrusted websites and tell it to "handle this." Treat an AI agent like a new admin user on your machine.'},
+
+ {g:'A',id:'A2',cat:['creds','supply'],sev:'red',title:'Cloud platform via connected AI tool',tag:'OAuth supply chain',
+  cost:'secrets exfiltrated',
+  brief:'A stolen token plus an over-broad "Allow All" grant drained secrets through the real API.',
+  issue:'Infostealer malware on an employee\u2019s machine stole their workspace login. An over-permissive OAuth grant to an AI tool let the attacker reach the cloud account and pull plaintext secrets through the legitimate API.',
+  cause:'A chain of small, excusable failures: a risky download, an "Allow All" permission nobody trimmed, and secrets stored in plaintext by default. The platform was never breached — the integration layer was.',
+  user:'Review the third-party apps connected to your Google/Microsoft account and revoke broad or unused permissions. Never grant "Allow All" when a tool only needs to read. And never run game cheats or pirated software — that\u2019s how the malware got in.'},
+
+ {g:'A',id:'A3',cat:['ai'],sev:'purple',title:'AI agent connector chaining',tag:'AI excessive agency',
+  cost:'reliable remote code execution',
+  brief:'A vague request let the AI chain a calendar into a code-execution tool.',
+  issue:'Asked to "take care of" calendar events, an AI assistant chained a low-risk connector (calendar) into a code-execution tool and ran instructions hidden inside an event body — with no human approval.',
+  cause:'No guardrail stopped the AI from forwarding data from a harmless connector into a dangerous one, and it over-read "take care of it" as permission to run code.',
+  user:'Be cautious giving AI agents vague, open-ended instructions when they can act on your behalf. Only install powerful connectors (terminal, file access) if you truly need them, and require a confirmation step before anything irreversible.'},
+
+ {g:'A',id:'A4',cat:['supply'],sev:'red',title:'Self-replicating package worm',tag:'Supply chain worm',
+  cost:'hundreds of packages affected',
+  brief:'A poisoned package stole secrets on install, then republished itself.',
+  issue:'Phished maintainer credentials were used to inject a malicious install script into trusted open-source packages. On install it stole secrets and used the stolen token to republish the maintainer\u2019s other packages — spreading on its own.',
+  cause:'Install scripts run automatically with no review, and one stolen publishing token became a self-propagation engine across the registry.',
+  user:'Most end users are affected as developers here: pin exact dependency versions, run installs with scripts disabled where you can, and turn on phishing-resistant MFA (a passkey or hardware key) for any package-registry or code accounts you own.'},
+
+ {g:'A',id:'A5',cat:['human'],sev:'blue',title:'Voice-phishing the help desk',tag:'Social engineering',
+  cost:'large-scale data theft',
+  brief:'A phone call convinced staff to reset MFA; SSO unlocked everything.',
+  issue:'Attackers phoned employees and help desks impersonating IT support, pressuring them to reset MFA or approve a push. Valid single sign-on then opened every connected app. No malware, no exploit.',
+  cause:'MFA worked perfectly — a human was simply talked into handing over the key under manufactured urgency, and SSO turned one identity into the whole company.',
+  user:'Treat urgency as a warning sign, not a reason to rush. No real IT department needs you to read out a code or approve a login on the spot. Use passkeys or hardware keys instead of push prompts, and verify any "IT support" caller through a known internal channel.'},
+
+ {g:'A',id:'A6',cat:['ops'],sev:'red',title:'Unpatched server vulnerability',tag:'Unpatched vulnerability',
+  cost:'tens of millions of people',
+  brief:'A patch existed for months. It simply wasn\u2019t applied.',
+  issue:'Attackers exploited an unpatched web-framework flaw, moved through the network for weeks, and exfiltrated data on tens of millions of people. An expired certificate had disabled the monitoring that should have caught it.',
+  cause:'A known patch went unapplied because patch management had no reliable ownership — a documented, tolerated gap rather than one person\u2019s slip.',
+  user:'As an individual: install security updates promptly on your own devices instead of postponing them, freeze your credit if your data may be exposed, and assume your personal info may already be out there — so enable fraud alerts and monitor statements.'},
+
+ {g:'A',id:'A7',cat:['creds','ops'],sev:'red',title:'Misconfigured cloud firewall',tag:'Cloud misconfiguration',
+  cost:'~100M people affected',
+  brief:'A misconfigured firewall opened a path into cloud-stored data.',
+  issue:'A misconfigured web-application firewall let an attacker reach data stored in a financial company\u2019s cloud — exposing around a hundred million applicants\u2019 records. The cloud platform itself wasn\u2019t breached; the configuration was.',
+  cause:'The customer side of the cloud shared-responsibility model failed: a firewall rule and over-broad access let a single request reach sensitive storage.',
+  user:'For your own cloud accounts (photos, files, backups): don\u2019t leave storage set to public, review sharing settings periodically, and turn on alerts for unusual sign-ins. Misconfiguration, not hacking, exposes most personal cloud data.'},
+
+ {g:'A',id:'A8',cat:['creds','human'],sev:'amber',title:'Breach concealed after the fact',tag:'Breach concealment',
+  cost:'criminal liability for an exec',
+  brief:'Hardcoded keys opened the door; concealment made it criminal.',
+  issue:'Credentials hardcoded in a public code repo let attackers reach a cloud storage bucket holding tens of millions of records. The company then paid the attackers to stay quiet and hid the breach for about a year.',
+  cause:'A secret committed to a public repository, followed by a deliberate cover-up that turned a security failure into a criminal one for the executive involved.',
+  user:'Never paste passwords or API keys into public places (repos, pastebins, screenshots). For accounts tied to a service that was breached, change reused passwords immediately and assume silence from a company doesn\u2019t mean you\u2019re safe.'},
+
+ {g:'A',id:'A9',cat:['ops','creds'],sev:'amber',title:'Exposed device, repeat breaches',tag:'Repeat exposure',
+  cost:'tens of millions of people',
+  brief:'An exposed router led inside — and breaches kept recurring.',
+  issue:'A misconfigured internet-exposed router let an attacker into the internal network, exposing tens of millions of people. Further breaches followed in later years, signalling a systemic problem.',
+  cause:'Exposed, poorly-configured infrastructure plus underinvestment — repeat incidents pointed to a pattern, not bad luck.',
+  user:'Secure your own "exposed router": change the default admin password on your home router, keep its firmware updated, and disable remote management you don\u2019t use. After a carrier breach, watch for SIM-swap attempts and add a port-out PIN with your carrier.'},
+
+ {g:'A',id:'A10',cat:['creds','ai'],sev:'red',title:'AI hiring chatbot with default login',tag:'Default creds + IDOR',
+  cost:'tens of millions of applicants',
+  brief:'A trivial default password plus an API that leaked records by counting up.',
+  issue:'An AI hiring chatbot used a trivial default admin password with no MFA. A flaw in an internal API let researchers pull any applicant\u2019s record just by changing an ID number.',
+  cause:'Two of the most basic failures at once: an unchanged default password with no MFA, and an API that trusted a guessable ID without checking who was asking.',
+  user:'Change every default password the moment you set up a device or account, and turn on MFA wherever it\u2019s offered. When applying to jobs online, share the minimum required and be wary of how much personal data a hiring chatbot asks for.'},
+
+ // ---------- GROUP B ----------
+ {g:'B',id:'B1',cat:['ai','creds'],sev:'red',title:'AI feature shipped without security review',tag:'Vendor risk · reputational',
+  cost:'reputational damage',
+  brief:'An AI feature bolted on without checking the vendor\u2019s security.',
+  issue:'An AI hiring chatbot was added to a recruitment funnel without auditing the vendor\u2019s basic security — credentials, MFA, API checks. The lasting cost was reputational.',
+  cause:'The rush to ship an AI feature outran basic security review, and the company inherited its vendor\u2019s failures.',
+  user:'As a consumer of AI-powered services, assume the convenience may hide weak security underneath. Give chatbots and AI tools only the data they genuinely need, and prefer services from vendors with a visible security track record.'},
+
+ {g:'B',id:'B2',cat:['ai'],sev:'purple',title:'Customer-facing chatbot made a binding promise',tag:'AI liability · customer-facing',
+  cost:'legal precedent · bot retired',
+  brief:'The chatbot invented a refund policy — and the company was bound by it.',
+  issue:'An airline\u2019s website chatbot gave a customer a refund policy that didn\u2019t exist. A tribunal ruled the company is responsible for what its chatbot says, rejecting the claim that the bot was a separate entity.',
+  cause:'A customer-facing AI generated confident but wrong information with no grounding in the real policy — and the company owns its words.',
+  user:'Don\u2019t treat a chatbot\u2019s answer as a guarantee. For anything that costs money or matters legally — refunds, fares, deadlines — screenshot the conversation and confirm the policy with a human or the official written terms before you rely on it.'},
+
+ {g:'B',id:'B3',cat:['ops'],sev:'red',title:'Bad deployment woke up dead code',tag:'Bad deployment',
+  cost:'firm-ending loss in minutes',
+  brief:'An update reached most servers but not all — and old code reactivated.',
+  issue:'A trading-software update was deployed to most servers but not all. A server still running dormant legacy code reactivated at market open, firing millions of unintended orders with no kill switch.',
+  cause:'Inconsistent deployment, dead code left in production, and no real-time circuit breaker to stop a system behaving abnormally.',
+  user:'Not an end-user threat directly — but the lesson travels: when you update something important, make sure the change actually applied everywhere, keep a way to undo it fast, and don\u2019t leave old, unused settings switched on in the background.'},
+
+ {g:'B',id:'B4',cat:['ops'],sev:'amber',title:'Single-vendor dependency, slow recovery',tag:'Vendor dependency · resilience',
+  cost:'industry-wide losses',
+  brief:'A bad security update crashed millions of machines; recovery is what differed.',
+  issue:'A faulty security-software update crashed millions of computers worldwide. Most affected companies recovered within a day; one with heavy single-vendor reliance and slow manual recovery saw its outage stretch for days.',
+  cause:'A security tool with deep system access became a single point of failure, and resilience — the ability to recover fast — mattered as much as prevention.',
+  user:'Build your own resilience: keep backups of important files in more than one place, don\u2019t rely on a single app or service for everything critical, and know your recovery steps before you need them. Auto-updates are good — blind dependence on one provider is the risk.'},
+
+ {g:'B',id:'B5',cat:['ops'],sev:'red',title:'A known gap left unfixed for years',tag:'Organizational / cultural',
+  cost:'massive loss · execs ousted',
+  brief:'One unapplied patch caused it — because no process made sure patches got applied.',
+  issue:'The same unpatched-server breach, seen as a management failure rather than a technical one. The break-in happened because a single security update was never installed — and that update was missed because the company had no working system to make sure patches actually got applied.',
+  cause:'Years before the breach, the company\u2019s own internal reviews had flagged that its patching process was unreliable. Leadership knew the gap existed and didn\u2019t fix it. So when one critical patch slipped through, there was no backup process to catch it — a known weakness left in place until attackers found it.',
+  user:'The personal version: don\u2019t tolerate your own known-but-ignored risks. The reused password you keep meaning to change, the backup you never set up, the update you keep dismissing — those are your unpatched vulnerabilities. Close them before they\u2019re exploited.'},
+];
+
+function caseCard(c){
+  const sev=SEV[c.sev]||'var(--ink-faint)';
+  const el=document.createElement('article');
+  el.className='case';
+  el.style.setProperty('--sev',sev);
+  el.dataset.cat=c.cat.join(' ');
+  el.innerHTML=`
+    <div class="case-head" role="button" tabindex="0" aria-expanded="false">
+      <div class="case-id">${c.id}</div>
+      <div class="case-main">
+        <div class="case-title">${c.title} <span class="case-tag">${c.tag}</span></div>
+        <div class="case-brief">${c.brief}</div>
+        <div class="case-cost">${c.cost}</div>
+      </div>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+    </div>
+    <div class="case-body">
+      <div class="case-body-inner">
+        <div class="layer l-issue">
+          <div class="layer-label" style="color:var(--ink-soft)"><span class="dot" style="background:var(--ink-soft)"></span>The issue</div>
+          <p>${c.issue}</p>
+        </div>
+        <div class="layer l-cause">
+          <div class="layer-label"><span class="dot"></span>What caused it</div>
+          <p>${c.cause}</p>
+        </div>
+        <div class="layer l-user">
+          <div class="layer-label"><span class="dot"></span>How you can avoid it</div>
+          <p>${c.user}</p>
+        </div>
+      </div>
+    </div>`;
+  // expand / collapse
+  const head=el.querySelector('.case-head');
+  const bodyEl=el.querySelector('.case-body');
+  function toggle(){
+    const open=el.classList.toggle('open');
+    head.setAttribute('aria-expanded',open);
+    bodyEl.style.maxHeight=open?bodyEl.scrollHeight+'px':'0px';
+  }
+  head.addEventListener('click',toggle);
+  head.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+  // keep height correct if window resizes while open
+  window.addEventListener('resize',()=>{if(el.classList.contains('open'))bodyEl.style.maxHeight=bodyEl.scrollHeight+'px';});
+  return el;
+}
+
+const gA=document.getElementById('groupA');
+const gB=document.getElementById('groupB');
+CASES.forEach(c=>{(c.g==='A'?gA:gB).appendChild(caseCard(c));});
+
+// ---------- scroll reveal ----------
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach((en,i)=>{
+    if(en.isIntersecting){
+      const cards=[...document.querySelectorAll('.case:not(.in)')];
+      en.target.classList.add('in');
+      io.unobserve(en.target);
+    }
+  });
+},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.case').forEach((c,i)=>{
+  c.style.transitionDelay=(Math.min(i,6)*40)+'ms';
+  io.observe(c);
+});
+
+// ---------- filtering ----------
+const chips=document.querySelectorAll('.chip');
+chips.forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    chips.forEach(c=>c.setAttribute('aria-pressed','false'));
+    chip.setAttribute('aria-pressed','true');
+    const f=chip.dataset.filter;
+    document.querySelectorAll('.case').forEach(card=>{
+      const show=f==='all'||card.dataset.cat.split(' ').includes(f);
+      card.classList.toggle('hidden',!show);
+      if(show && !card.classList.contains('in')){card.classList.add('in');}
+    });
+  });
+});
+</script>
+</body>
+</html>
